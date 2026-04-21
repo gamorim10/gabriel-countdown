@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TheGabriel!Signal — Countdown</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --red: #cc0000;
+      --bright: #ff2222;
+      --dim: #660000;
+      --glow: 0 0 10px #ff0000, 0 0 24px #ff000055;
+    }
+
+    body {
+      background: #000;
+      color: var(--bright);
+      font-family: 'Courier New', Courier, monospace;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    #starfield { position: fixed; inset: 0; z-index: 0; }
+
+    .scanlines {
+      position: fixed; inset: 0; z-index: 1; pointer-events: none;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 2px,
+        rgba(0,0,0,0.10) 2px, rgba(0,0,0,0.10) 4px
+      );
+    }
+
+    .container {
+      position: relative; z-index: 10;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 10px;
+      padding: 24px 16px; text-align: center;
+    }
+
+    .label-top {
+      font-size: 9px; letter-spacing: 4px; color: var(--dim);
+      text-transform: uppercase;
+    }
+
+    .signal-title {
+      font-size: clamp(20px, 7vw, 48px); font-weight: bold;
+      letter-spacing: clamp(2px, 1.5vw, 6px);
+      color: #ff0000; line-height: 1;
+      text-shadow: 0 0 36px #ff0000, 0 0 72px #ff000066;
+    }
+
+    @keyframes glitch {
+      0%,89%,100%{ transform:translate(0); clip-path:none; }
+      90%{ transform:translate(-3px,1px); clip-path:inset(30% 0 50% 0); }
+      92%{ transform:translate(3px,-1px); clip-path:inset(60% 0 20% 0); }
+      94%{ transform:translate(-2px,2px); clip-path:inset(10% 0 70% 0); }
+      96%{ transform:translate(0); clip-path:none; }
+    }
+    .glitch { animation: glitch 3.5s infinite; }
+
+    .divider {
+      width: min(400px, 90vw); height: 1px;
+      background: linear-gradient(to right, transparent, #cc0000, transparent);
+      margin: 4px 0;
+    }
+
+    .countdown-grid {
+      display: flex; gap: clamp(10px, 3vw, 24px);
+      align-items: flex-start; margin: 8px 0;
+    }
+
+    .unit {
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+    }
+
+    .digits {
+      font-size: clamp(48px, 14vw, 110px);
+      font-weight: bold;
+      letter-spacing: -2px;
+      line-height: 1;
+      color: var(--bright);
+      text-shadow: var(--glow);
+      min-width: clamp(70px, 20vw, 160px);
+      text-align: center;
+      transition: color 0.1s;
+    }
+
+    .digits.tick {
+      color: #fff;
+      text-shadow: 0 0 20px #fff, 0 0 40px #ff0000;
+    }
+
+    .unit-label {
+      font-size: clamp(8px, 2vw, 10px);
+      letter-spacing: 4px; color: var(--dim);
+      text-transform: uppercase;
+    }
+
+    .sep {
+      font-size: clamp(40px, 12vw, 90px);
+      font-weight: bold; color: #330000;
+      line-height: 1; margin-top: 4px;
+      align-self: flex-start; padding-top: clamp(8px, 2vw, 14px);
+    }
+
+    .event-info {
+      font-size: clamp(11px, 3vw, 13px);
+      letter-spacing: 2px; color: #884444;
+      margin-top: 4px;
+    }
+
+    .event-info strong { color: #ff4444; }
+
+    .geo-bar {
+      width: min(400px, 90vw); height: 4px;
+      display: flex; gap: 3px; margin: 6px auto;
+    }
+    .geo-bar span { display: block; height: 100%; }
+
+    .footer {
+      font-size: 9px; letter-spacing: 3px; color: #220000; margin-top: 8px;
+    }
+
+    /* LAUNCHED state */
+    .launched-msg {
+      display: none;
+      font-size: clamp(22px, 8vw, 52px); font-weight: bold;
+      letter-spacing: 4px; color: #ff0000;
+      text-shadow: 0 0 40px #ff0000, 0 0 80px #ff000066;
+      animation: glitch 2s infinite;
+    }
+
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+    .pulse { animation: blink 1.2s ease-in-out infinite; }
+  </style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+<div class="scanlines"></div>
+
+<div class="container">
+  <div class="label-top">// contagem regressiva //</div>
+
+  <div class="signal-title glitch">TheGabriel!Signal</div>
+
+  <div class="divider"></div>
+
+  <div class="geo-bar">
+    <span style="flex:3;background:#cc0000;opacity:0.85;"></span>
+    <span style="flex:1;background:#880000;opacity:0.65;"></span>
+    <span style="flex:0.5;background:#440000;opacity:0.45;"></span>
+  </div>
+
+  <div id="countdown-wrap" class="countdown-grid">
+    <div class="unit">
+      <div class="digits" id="days">00</div>
+      <div class="unit-label">dias</div>
+    </div>
+    <div class="sep">:</div>
+    <div class="unit">
+      <div class="digits" id="hours">00</div>
+      <div class="unit-label">horas</div>
+    </div>
+    <div class="sep">:</div>
+    <div class="unit">
+      <div class="digits" id="minutes">00</div>
+      <div class="unit-label">minutos</div>
+    </div>
+    <div class="sep">:</div>
+    <div class="unit">
+      <div class="digits pulse" id="seconds">00</div>
+      <div class="unit-label">segundos</div>
+    </div>
+  </div>
+
+  <div class="launched-msg" id="launched">SINAL LANÇADO 🚀</div>
+
+  <div class="divider"></div>
+
+  <div class="event-info">
+    <strong>1º DE MAIO · 16:00</strong><br>
+    Av. Ibijau, 45 · Salão de Festas
+  </div>
+
+  <div class="geo-bar" style="transform:scaleX(-1);">
+    <span style="flex:3;background:#cc0000;opacity:0.85;"></span>
+    <span style="flex:1;background:#880000;opacity:0.65;"></span>
+    <span style="flex:0.5;background:#440000;opacity:0.45;"></span>
+  </div>
+
+  <div class="footer">GABRIEL · ANIVERSÁRIO · SINAL RECEBIDO</div>
+</div>
+
+<script>
+// ── STARFIELD ──────────────────────────────────────────────────────────────
+const sfCanvas = document.getElementById('starfield');
+const sfCtx = sfCanvas.getContext('2d');
+let stars = [];
+
+function initStars() {
+  sfCanvas.width = window.innerWidth;
+  sfCanvas.height = window.innerHeight;
+  stars = Array.from({ length: 180 }, () => ({
+    x: Math.random() * sfCanvas.width,
+    y: Math.random() * sfCanvas.height,
+    r: Math.random() * 1.3 + 0.2,
+    op: Math.random(),
+  }));
+}
+
+function drawStars() {
+  sfCtx.clearRect(0, 0, sfCanvas.width, sfCanvas.height);
+  stars.forEach(s => {
+    s.op += (Math.random() - 0.5) * 0.04;
+    s.op = Math.max(0.05, Math.min(0.9, s.op));
+    sfCtx.beginPath();
+    sfCtx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    sfCtx.fillStyle = `rgba(255,${Math.floor(Math.random()*25)},${Math.floor(Math.random()*25)},${s.op})`;
+    sfCtx.fill();
+  });
+  requestAnimationFrame(drawStars);
+}
+
+initStars();
+drawStars();
+window.addEventListener('resize', initStars);
+
+// ── COUNTDOWN ──────────────────────────────────────────────────────────────
+const TARGET = new Date('2025-05-01T16:00:00');
+
+function pad(n) { return String(n).padStart(2, '0'); }
+
+function tick(el) {
+  el.classList.add('tick');
+  setTimeout(() => el.classList.remove('tick'), 150);
+}
+
+let prevSec = -1;
+
+function update() {
+  const now = new Date();
+  const diff = TARGET - now;
+
+  if (diff <= 0) {
+    document.getElementById('countdown-wrap').style.display = 'none';
+    document.getElementById('launched').style.display = 'block';
+    return;
+  }
+
+  const days    = Math.floor(diff / 86400000);
+  const hours   = Math.floor((diff % 86400000) / 3600000);
+  const minutes = Math.floor((diff % 3600000)  / 60000);
+  const seconds = Math.floor((diff % 60000)    / 1000);
+
+  const dEl = document.getElementById('days');
+  const hEl = document.getElementById('hours');
+  const mEl = document.getElementById('minutes');
+  const sEl = document.getElementById('seconds');
+
+  if (seconds !== prevSec) {
+    tick(sEl);
+    if (seconds === 59) tick(mEl);
+    if (seconds === 59 && minutes === 59) tick(hEl);
+    prevSec = seconds;
+  }
+
+  dEl.textContent = pad(days);
+  hEl.textContent = pad(hours);
+  mEl.textContent = pad(minutes);
+  sEl.textContent = pad(seconds);
+}
+
+update();
+setInterval(update, 500);
+</script>
+</body>
+</html>
