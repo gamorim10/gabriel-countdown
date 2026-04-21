@@ -34,7 +34,7 @@
       position: relative; z-index: 10;
       display: flex; flex-direction: column;
       align-items: center;
-      gap: 28px;
+      gap: 32px;
       padding: 24px 16px;
       text-align: center;
     }
@@ -54,56 +54,6 @@
       background: linear-gradient(to right, transparent, #cc0000, transparent);
     }
 
-    .countdown-grid {
-      display: flex;
-      gap: clamp(8px, 2.5vw, 20px);
-      align-items: flex-start;
-    }
-
-    .unit {
-      display: flex; flex-direction: column; align-items: center; gap: 8px;
-    }
-
-    @keyframes pulse-red {
-      0%, 100% { color: #cc0000; text-shadow: 0 0 12px #ff000066; }
-      50%       { color: #ff2222; text-shadow: 0 0 30px #ff0000, 0 0 60px #ff000088, 0 0 90px #ff000044; }
-    }
-
-    .digits {
-      font-family: 'Courier New', Courier, monospace;
-      font-size: clamp(52px, 15vw, 120px);
-      font-weight: bold;
-      letter-spacing: -2px;
-      line-height: 1;
-      min-width: clamp(72px, 21vw, 168px);
-      text-align: center;
-      animation: pulse-red 1s ease-in-out infinite;
-    }
-
-    .unit-label {
-      font-size: clamp(12px, 3vw, 20px);
-      letter-spacing: 4px;
-      color: #440000;
-      text-transform: uppercase;
-    }
-
-    .sep {
-      font-size: clamp(40px, 12vw, 90px);
-      font-weight: bold;
-      color: #330000;
-      line-height: 1;
-      align-self: flex-start;
-      padding-top: clamp(6px, 1.5vw, 12px);
-    }
-
-    .event-info {
-      font-family: 'Syncopate', sans-serif;
-      font-size: clamp(18px, 5vw, 48px);
-      letter-spacing: 3px;
-      color: #550000;
-      line-height: 1.8;
-    }
-
     @keyframes glitch {
       0%,89%,100%{ transform:translate(0); clip-path:none; }
       90%{ transform:translate(-3px,1px); clip-path:inset(30% 0 50% 0); }
@@ -112,47 +62,28 @@
       96%{ transform:translate(0); clip-path:none; }
     }
 
-    .launched-msg {
-      display: none;
+    /* shared style for countdown + launched */
+    .big-display {
       font-family: 'Syncopate', sans-serif;
-      font-size: clamp(24px, 8vw, 56px);
       font-weight: 700;
+      font-size: clamp(24px, 8vw, 56px);
       letter-spacing: 6px;
       color: #ff0000;
       text-shadow: 0 0 40px #ff0000, 0 0 80px #ff000066;
-      animation: glitch 2s infinite;
+      min-height: 1.4em;
+      transition: opacity 0.15s;
     }
 
-    /* ── TICKER ── */
-    .ticker-wrap {
-      width: min(480px, 92vw);
-      border: 1px solid #220000;
-      background: #040000;
-      padding: 10px 16px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+    .big-display.dim { opacity: 0; }
+    .big-display.glitching { animation: glitch 2s infinite; }
 
-    .ticker-badge {
-      font-size: 8px;
+    .event-info {
+      font-family: 'Syncopate', sans-serif;
+      font-size: clamp(18px, 5vw, 48px);
       letter-spacing: 3px;
-      color: #660000;
-      white-space: nowrap;
-      flex-shrink: 0;
+      color: #550000;
+      line-height: 1.8;
     }
-
-    .ticker-text {
-      font-size: clamp(11px, 2.8vw, 13px);
-      letter-spacing: 2px;
-      color: #cc0000;
-      text-shadow: 0 0 8px #ff000055;
-      flex: 1;
-      text-align: left;
-      transition: opacity 0.2s;
-    }
-
-    .ticker-text.dim { opacity: 0; }
   </style>
 </head>
 <body>
@@ -166,36 +97,9 @@
 
   <div class="divider"></div>
 
-  <div id="countdown-wrap" class="countdown-grid">
-    <div class="unit">
-      <div class="digits" id="days">00</div>
-      <div class="unit-label">days</div>
-    </div>
-    <div class="sep">:</div>
-    <div class="unit">
-      <div class="digits" id="hours">00</div>
-      <div class="unit-label">hours</div>
-    </div>
-    <div class="sep">:</div>
-    <div class="unit">
-      <div class="digits" id="minutes">00</div>
-      <div class="unit-label">minutes</div>
-    </div>
-    <div class="sep">:</div>
-    <div class="unit">
-      <div class="digits" id="seconds">00</div>
-      <div class="unit-label">seconds</div>
-    </div>
-  </div>
-
-  <div class="launched-msg" id="launched">SIGNAL LAUNCHED</div>
+  <div class="big-display" id="main-display">--:--:--</div>
 
   <div class="divider"></div>
-
-  <div class="ticker-wrap">
-    <div class="ticker-badge">// TRANSMISSION //</div>
-    <div class="ticker-text" id="ticker">--</div>
-  </div>
 
   <div class="event-info">
     MAY 1ST · 4:00 PM<br>
@@ -240,105 +144,95 @@ window.addEventListener('resize', initStars);
 
 // ── COUNTDOWN ──────────────────────────────────────────────────────────────
 const TARGET = new Date('2025-05-01T16:00:00');
-const GLYPHS = '▓░▒█▄▀■□▪▫◆◇○●◉⬡⬢';
+const GLYPHS = '⌖⌗⌘⍙⍚⍛⍜⎔⎕⏣⌬⌭⌮⌯⌰◈◉◎⊕⊗⋈⋉⋊⋯∷∶⁑⁂꙰';
 
 function pad(n) { return String(n).padStart(2, '0'); }
 
-function randGlyph() {
-  return GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
-}
-
-function scramble(text) {
-  return text.split('').map(c => c === ' ' ? ' ' : randGlyph()).join('');
-}
-
-function getTimeString(diff) {
-  const d = Math.floor(diff / 86400000);
-  const h = Math.floor((diff % 86400000) / 3600000);
+function getTimeString() {
+  const diff = TARGET - new Date();
+  if (diff <= 0) return null;
+  const h = Math.floor(diff / 3600000);
   const m = Math.floor((diff % 3600000) / 60000);
   const s = Math.floor((diff % 60000) / 1000);
-  return `${pad(d)}D : ${pad(h)}H : ${pad(m)}M : ${pad(s)}S`;
+  return `${pad(h)}:${pad(m)}:${pad(s)}`;
 }
 
-function update() {
-  const diff = TARGET - new Date();
-
-  if (diff <= 0) {
-    document.getElementById('countdown-wrap').style.display = 'none';
-    document.getElementById('launched').style.display = 'block';
-    return;
+function randomCode(len) {
+  let out = '';
+  for (let i = 0; i < len; i++) {
+    if (i === 2 || i === 5) { out += ':'; continue; }
+    out += GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
   }
-
-  document.getElementById('days').textContent    = pad(Math.floor(diff / 86400000));
-  document.getElementById('hours').textContent   = pad(Math.floor((diff % 86400000) / 3600000));
-  document.getElementById('minutes').textContent = pad(Math.floor((diff % 3600000) / 60000));
-  document.getElementById('seconds').textContent = pad(Math.floor((diff % 60000) / 1000));
+  return out;
 }
 
-// ── TICKER ─────────────────────────────────────────────────────────────────
-const tickerEl = document.getElementById('ticker');
-let showingCode = true;
-let scrambleInterval = null;
+// ── ALTERNATING DISPLAY ────────────────────────────────────────────────────
+const el = document.getElementById('main-display');
+let showingTime = false;
+let scrambleTimer = null;
+let cycleTimer = null;
 
-function setTicker(text, fade) {
-  if (fade) {
-    tickerEl.classList.add('dim');
-    setTimeout(() => {
-      tickerEl.textContent = text;
-      tickerEl.classList.remove('dim');
-    }, 220);
-  } else {
-    tickerEl.textContent = text;
-  }
+function fadeTo(text, done) {
+  el.classList.add('dim');
+  setTimeout(() => {
+    el.textContent = text;
+    el.classList.remove('dim');
+    if (done) done();
+  }, 160);
 }
 
-function startScramble(target) {
+function runScramble(target, onDone) {
   let ticks = 0;
-  const max = 14;
-  clearInterval(scrambleInterval);
-  scrambleInterval = setInterval(() => {
+  const max = 16;
+  clearInterval(scrambleTimer);
+  scrambleTimer = setInterval(() => {
     ticks++;
     if (ticks >= max) {
-      clearInterval(scrambleInterval);
-      setTicker(target, false);
+      clearInterval(scrambleTimer);
+      el.textContent = target;
+      if (onDone) onDone();
     } else {
-      tickerEl.textContent = scramble(target);
+      el.textContent = randomCode(target.length);
     }
-  }, 60);
+  }, 55);
 }
 
-function cycleTicker() {
-  const diff = TARGET - new Date();
-  if (diff <= 0) {
-    setTicker('SIGNAL LAUNCHED', true);
+function cycle() {
+  const time = getTimeString();
+
+  if (!time) {
+    clearInterval(cycleTimer);
+    fadeTo('SIGNAL LAUNCHED', () => el.classList.add('glitching'));
     return;
   }
 
-  showingCode = !showingCode;
+  showingTime = !showingTime;
 
-  if (showingCode) {
-    const codeStr = getTimeString(diff);
-    tickerEl.classList.add('dim');
-    setTimeout(() => {
-      tickerEl.classList.remove('dim');
-      startScramble(codeStr);
-    }, 220);
+  if (showingTime) {
+    fadeTo('', () => runScramble(time));
   } else {
-    const timeStr = getTimeString(diff);
-    tickerEl.classList.add('dim');
-    setTimeout(() => {
-      tickerEl.classList.remove('dim');
-      startScramble(timeStr);
-    }, 220);
+    fadeTo('', () => {
+      let ticks = 0;
+      clearInterval(scrambleTimer);
+      scrambleTimer = setInterval(() => {
+        ticks++;
+        el.textContent = randomCode(8);
+        if (ticks >= 20) clearInterval(scrambleTimer);
+      }, 55);
+    });
   }
 }
 
-update();
-setInterval(update, 500);
-
-// Init ticker immediately with scramble into time
-setTimeout(() => startScramble(getTimeString(TARGET - new Date())), 600);
-setInterval(cycleTicker, 2800);
+// kick off
+const initialTime = getTimeString();
+if (initialTime) {
+  runScramble(initialTime, () => {
+    cycleTimer = setInterval(cycle, 2500);
+  });
+} else {
+  el.textContent = 'SIGNAL LAUNCHED';
+  el.classList.add('glitching');
+}
 </script>
 </body>
 </html>
